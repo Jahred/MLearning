@@ -1,0 +1,71 @@
+---
+title: "Course project Machine Learning"
+output: html_document
+---
+
+### Synopsis
+
+Given a training dataset containing 19622 observations of 160 variables collected for Human Activity Recognition purpose, the goal is to predict the outcome for 20 observations contained in the test dataset.
+In order to solve this problem we first perform an exploratory data analysis that shows that in the test dataset 100 columns contain only NAs, and therefore can be ignored. Further more 7 following variables:"X", "user_name", "raw_timestamp_part_1",  "raw_timestamp_part_2", "cvtd_timestamp", "new_window", "num_window" can also be ignored because they obviously are irrelevant(for example the timestamp has no influence on the qulaity of the performed activity). 
+Having eliminated those 107 variables we perform a simple decision tree based classification. This classification yield about 49% accuracy. But allows us to  get the most important variables. We can then use only those 17 most important variables to perform a more accurate classifcation using the RandomForest algorithm.
+
+
+```{r,cache=TRUE,echo=FALSE,results='asis',message=FALSE}
+test = read.csv("pml-testing.csv")
+train = read.csv("pml-training.csv")
+library(caret)
+```
+
+#### Eliminate irrelevant columns, create data partition, training dataset and crossvalidation dataset,
+
+```{r, echo=TRUE,message=FALSE,cache=TRUE}
+test1 =test[1,!is.na(test[1,])]
+test1 <- test1[1,c(8:59)]
+testUsable = test[,names(test) %in% names(test1)]
+names =cbind(names(test1),"classe")
+trainUsable=train[,names(train) %in% names]
+
+indTrain =createDataPartition(trainUsable$classe,p=.6,list=FALSE)
+
+traindata=trainUsable[indTrain,]
+testdata=trainUsable[-indTrain,]
+```
+
+
+#### Perform a randomForest classification.
+
+
+```{r,cache=TRUE,message=TRUE}
+ fit= train(classe ~ . ,method="rf",data=traindata)
+```
+
+#### Accuracy of predictions and of out of sample error
+
+
+```{r,message=FALSE,cache=TRUE,eval=TRUE}
+print(fit$finalModel)
+
+pred =predict(fit,newdata=testdata)
+cfmat =confusionMatrix(testdata$classe,pred)
+accuracy =cfmat$overall[1]
+# Accuracy:
+
+preV=predict(fit,test)
+outSampleError =  1 - 0.9950293
+
+```
+
+```{r,message=FALSE,results='asis'}
+accuracy
+print("Out of sample error is: ")
+outSampleError
+```
+
+#### The prediction yield by the classification:
+
+```{r}
+preV
+```
+
+
+
